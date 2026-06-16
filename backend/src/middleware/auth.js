@@ -3,13 +3,13 @@ const { supabaseAdmin } = require('../config/supabase');
 
 async function requireAuth(req, res, next) {
   try {
-    if (!supabaseAdmin) {
-      return fail(res, 'Supabase no configurado', 503);
-    }
-
     const authHeader = req.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       return fail(res, 'Token de autenticación requerido', 401);
+    }
+
+    if (!supabaseAdmin) {
+      return fail(res, 'Supabase no configurado', 503);
     }
 
     const token = authHeader.slice(7);
