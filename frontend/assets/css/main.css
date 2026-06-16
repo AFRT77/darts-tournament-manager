@@ -1,0 +1,19 @@
+body {
+  min-height: 100vh;
+}
+
+.card {
+  border-radius: 1rem;
+}
+
+.auth-page .card {
+  border-radius: 1rem;
+}
+
+.navbar-brand {
+  letter-spacing: 0.02em;
+}
+
+.opacity-75 {
+  opacity: 0.75;
+}

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Torneos · Darts Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="index.html">Darts Manager</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#admin-nav" aria-controls="admin-nav" aria-expanded="false" aria-label="Menú">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="admin-nav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link" href="players.html">Jugadores</a></li>
+          <li class="nav-item"><a class="nav-link active" href="tournaments.html">Torneos</a></li>
+          <li class="nav-item"><a class="nav-link" href="index.html">Usuarios</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-3 py-2 py-lg-0">
+          <div class="text-white small text-end">
+            <div id="user-name" class="fw-semibold">...</div>
+            <div class="opacity-75">Administrador</div>
+          </div>
+          <button type="button" class="btn btn-outline-light btn-sm" id="logout-btn">Salir</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+      <div>
+        <h1 class="h4 mb-1">Torneos</h1>
+        <p class="text-muted mb-0">Crea y gestiona torneos antes de generar enfrentamientos.</p>
+      </div>
+      <button type="button" class="btn btn-primary" id="new-tournament-btn">Nuevo torneo</button>
+    </div>
+
+    <div id="tournaments-alert" class="alert d-none" role="alert"></div>
+
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-body">
+        <div class="row g-3 align-items-end">
+          <div class="col-md-6">
+            <label class="form-label" for="search-input">Buscar</label>
+            <input type="search" class="form-control" id="search-input" placeholder="Nombre del torneo">
+          </div>
+          <div class="col-md-3">
+            <label class="form-label" for="status-filter">Estado</label>
+            <select class="form-select" id="status-filter">
+              <option value="all">Todos</option>
+              <option value="draft">Borrador</option>
+              <option value="active">Activo</option>
+              <option value="finished">Finalizado</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <button type="button" class="btn btn-outline-secondary w-100" id="refresh-btn">Actualizar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0 align-middle">
+          <thead class="table-light">
+            <tr>
+              <th>Torneo</th>
+              <th>Formato</th>
+              <th>Juego</th>
+              <th>Estado</th>
+              <th>Jugadores</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="tournaments-table-body">
+            <tr><td colspan="6" class="text-center text-muted py-4">Cargando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="card-footer bg-white">
+        <span class="small text-muted" id="pagination-info">...</span>
+      </div>
+    </div>
+  </main>
+
+  <div class="modal fade" id="tournament-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <form id="tournament-form">
+          <div class="modal-header">
+            <h2 class="modal-title h5">Nuevo torneo</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-12">
+                <label class="form-label" for="tournament-name">Nombre</label>
+                <input class="form-control" id="tournament-name" name="name" type="text" required minlength="3">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="tournament-format">Formato</label>
+                <select class="form-select" id="tournament-format" name="format" required>
+                  <option value="knockout">Eliminación directa</option>
+                  <option value="round_robin">Todos contra todos</option>
+                  <option value="groups_knockout">Grupos + eliminatoria</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="tournament-game">Tipo de juego</label>
+                <select class="form-select" id="tournament-game" name="gameType" required>
+                  <option value="501">501</option>
+                  <option value="301">301</option>
+                  <option value="cricket">Cricket</option>
+                </select>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" for="tournament-al-mejor-de">Al mejor de</label>
+                <select class="form-select" id="tournament-al-mejor-de" name="alMejorDe">
+                  <option value="1">Al mejor de 1</option>
+                  <option value="3" selected>Al mejor de 3</option>
+                  <option value="5">Al mejor de 5</option>
+                  <option value="7">Al mejor de 7</option>
+                </select>
+                <div class="form-text" id="al-mejor-de-help">
+                  Se jugarán como máximo 3 partidas. Gana quien consiga 2 partidas antes que su rival.
+                </div>
+              </div>
+              <div class="col-md-6 d-none" id="group-count-field">
+                <label class="form-label" for="tournament-groups">Número de grupos</label>
+                <input class="form-control" id="tournament-groups" name="groupCount" type="number" min="2" max="16" value="4">
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="save-tournament-btn">Crear torneo</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="../js/pages/tournaments-admin.js"></script>
+</body>
+</html>

@@ -1,0 +1,544 @@
+openapi: 3.0.3
+info:
+  title: Darts Tournament Manager API
+  version: 1.0.0
+  description: |
+    API REST versionada para gestión de torneos de dardos.
+
+    Pensada para clientes web y aplicaciones móviles (iOS/Android).
+
+    ## Autenticación
+    Usa JWT Bearer token obtenido en `POST /auth/login`.
+
+    ## Formato de respuesta
+    Todas las respuestas siguen el mismo formato JSON estándar.
+
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Desarrollo local
+
+tags:
+  - name: Sistema
+  - name: Auth
+  - name: Jugadores
+  - name: Torneos
+  - name: Enfrentamientos
+  - name: Estadísticas
+
+paths:
+  /:
+    get:
+      tags: [Sistema]
+      summary: Información de la API v1
+      responses:
+        '200':
+          description: Metadatos de la API
+
+  /health:
+    get:
+      tags: [Sistema]
+      summary: Health check
+      responses:
+        '200':
+          description: API operativa
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Iniciar sesión
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Sesión iniciada
+
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Registrar usuario (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Usuario creado
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Renovar token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: Token renovado
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Perfil autenticado
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Perfil actual
+
+  /players:
+    get:
+      tags: [Jugadores]
+      summary: Listar jugadores
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/limit'
+        - in: query
+          name: search
+          schema:
+            type: string
+        - in: query
+          name: active
+          schema:
+            type: string
+            enum: [true, false, all]
+      responses:
+        '200':
+          description: Lista paginada
+    post:
+      tags: [Jugadores]
+      summary: Crear jugador (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreatePlayerRequest'
+      responses:
+        '201':
+          description: Jugador creado
+
+  /players/{id}:
+    get:
+      tags: [Jugadores]
+      summary: Detalle de jugador
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Jugador encontrado
+    put:
+      tags: [Jugadores]
+      summary: Actualizar jugador (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Jugador actualizado
+    delete:
+      tags: [Jugadores]
+      summary: Desactivar jugador (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Jugador desactivado
+
+  /tournaments:
+    get:
+      tags: [Torneos]
+      summary: Listar torneos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/page'
+        - $ref: '#/components/parameters/limit'
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [draft, active, finished, all]
+        - in: query
+          name: search
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Lista paginada
+    post:
+      tags: [Torneos]
+      summary: Crear torneo (admin)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTournamentRequest'
+      responses:
+        '201':
+          description: Torneo creado
+
+  /tournaments/{id}:
+    get:
+      tags: [Torneos]
+      summary: Detalle de torneo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Torneo encontrado
+    put:
+      tags: [Torneos]
+      summary: Actualizar torneo en borrador (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Torneo actualizado
+
+  /tournaments/{id}/players:
+    get:
+      tags: [Torneos]
+      summary: Jugadores inscritos
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Lista de inscritos
+    post:
+      tags: [Torneos]
+      summary: Inscribir jugadores (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '201':
+          description: Jugadores inscritos
+
+  /tournaments/{id}/players/{playerId}:
+    delete:
+      tags: [Torneos]
+      summary: Quitar jugador del torneo (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+        - in: path
+          name: playerId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Jugador eliminado del torneo
+
+  /tournaments/{id}/start:
+    post:
+      tags: [Torneos]
+      summary: Iniciar torneo (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Torneo activo
+
+  /tournaments/{id}/finish:
+    post:
+      tags: [Torneos]
+      summary: Finalizar torneo (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Torneo finalizado
+
+  /tournaments/{id}/generate-matches:
+    post:
+      tags: [Enfrentamientos]
+      summary: Generar enfrentamientos (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '201':
+          description: Enfrentamientos creados
+
+  /tournaments/{id}/matches:
+    get:
+      tags: [Enfrentamientos]
+      summary: Listar enfrentamientos del torneo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Lista de enfrentamientos
+
+  /tournaments/{id}/bracket:
+    get:
+      tags: [Enfrentamientos]
+      summary: Cuadro del torneo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Cuadro por rondas
+
+  /tournaments/{id}/standings:
+    get:
+      tags: [Estadísticas]
+      summary: Clasificación del torneo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+        - in: query
+          name: group
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Tabla de clasificación
+
+  /matches/{matchId}:
+    get:
+      tags: [Enfrentamientos]
+      summary: Detalle de enfrentamiento
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Enfrentamiento encontrado
+
+  /matches/{matchId}/legs:
+    post:
+      tags: [Enfrentamientos]
+      summary: Registrar partida ganada (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [winnerId]
+              properties:
+                winnerId:
+                  type: string
+                  format: uuid
+      responses:
+        '200':
+          description: Partida registrada
+
+  /matches/{matchId}/result:
+    put:
+      tags: [Enfrentamientos]
+      summary: Resultado manual / pase directo (admin)
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: matchId
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Resultado registrado
+
+  /stats/global:
+    get:
+      tags: [Estadísticas]
+      summary: Ranking global de jugadores
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estadísticas globales
+
+  /stats/players/{id}:
+    get:
+      tags: [Estadísticas]
+      summary: Estadísticas de un jugador
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Estadísticas del jugador
+
+  /stats/tournaments/{id}:
+    get:
+      tags: [Estadísticas]
+      summary: Resumen estadístico del torneo
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/id'
+      responses:
+        '200':
+          description: Resumen del torneo
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    id:
+      in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+    page:
+      in: query
+      name: page
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    limit:
+      in: query
+      name: limit
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          nullable: true
+        meta:
+          nullable: true
+        error:
+          nullable: true
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          minLength: 6
+
+    RegisterRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+        displayName:
+          type: string
+        role:
+          type: string
+          enum: [admin, user]
+
+    CreatePlayerRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        nickname:
+          type: string
+        rankingPoints:
+          type: integer
+        profileId:
+          type: string
+          format: uuid
+
+    CreateTournamentRequest:
+      type: object
+      required: [name, format, gameType]
+      properties:
+        name:
+          type: string
+        format:
+          type: string
+          enum: [knockout, round_robin, groups_knockout]
+        gameType:
+          type: string
+          enum: [501, 301, cricket]
+        settings:
+          type: object
+          properties:
+            alMejorDe:
+              type: integer
+              example: 3
+            groupCount:
+              type: integer

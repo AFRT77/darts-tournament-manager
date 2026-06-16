@@ -1,0 +1,12 @@
+{
+  "name": "darts-tournament-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Gestor de torneos de dardos",
+  "scripts": {
+    "dev": "npm run dev --prefix backend",
+    "start": "npm run start --prefix backend",
+    "test": "npm run test --prefix backend",
+    "install:backend": "npm install --prefix backend"
+  }
+}

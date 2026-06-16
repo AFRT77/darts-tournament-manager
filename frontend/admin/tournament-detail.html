@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle torneo · Darts Manager</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body class="bg-light">
+  <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand fw-semibold" href="index.html">Darts Manager</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#admin-nav" aria-controls="admin-nav" aria-expanded="false" aria-label="Menú">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="admin-nav">
+        <ul class="navbar-nav me-auto">
+          <li class="nav-item"><a class="nav-link" href="players.html">Jugadores</a></li>
+          <li class="nav-item"><a class="nav-link active" href="tournaments.html">Torneos</a></li>
+          <li class="nav-item"><a class="nav-link" href="index.html">Usuarios</a></li>
+        </ul>
+        <div class="d-flex align-items-center gap-3 py-2 py-lg-0">
+          <div class="text-white small text-end">
+            <div id="user-name" class="fw-semibold">...</div>
+            <div class="opacity-75">Administrador</div>
+          </div>
+          <button type="button" class="btn btn-outline-light btn-sm" id="logout-btn">Salir</button>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+      <div>
+        <a href="tournaments.html" class="small text-decoration-none">← Volver a torneos</a>
+        <div class="d-flex align-items-center gap-2 mt-2">
+          <h1 class="h4 mb-0" id="tournament-title">Torneo</h1>
+          <span class="badge" id="tournament-status-badge">...</span>
+        </div>
+        <div class="text-muted small mt-2" id="tournament-meta"></div>
+      </div>
+      <div class="d-flex gap-2 flex-wrap">
+        <button type="button" class="btn btn-success d-none" id="start-btn">Iniciar torneo</button>
+        <button type="button" class="btn btn-warning d-none" id="generate-matches-btn">Generar enfrentamientos</button>
+        <button type="button" class="btn btn-dark d-none" id="finish-btn">Finalizar torneo</button>
+      </div>
+    </div>
+
+    <div id="page-alert" class="alert d-none" role="alert"></div>
+
+    <div class="row g-4">
+      <div class="col-lg-7">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-white">
+            <h2 class="h6 mb-0">Jugadores inscritos</h2>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover mb-0 align-middle">
+              <thead class="table-light">
+                <tr>
+                  <th>Seed</th>
+                  <th>Jugador</th>
+                  <th>Puntos</th>
+                  <th class="text-end">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="enrolled-table-body">
+                <tr><td colspan="4" class="text-center text-muted py-4">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-5">
+        <div class="card shadow-sm border-0">
+          <div class="card-body">
+            <h2 class="h6 mb-3">Inscribir jugadores</h2>
+            <p class="text-muted small">Solo en torneos en borrador. Se necesitan al menos 2 para iniciar.</p>
+            <div id="available-players" class="mb-3"></div>
+            <button type="button" class="btn btn-primary w-100" id="add-players-btn">Añadir seleccionados</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4">
+      <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h2 class="h6 mb-0">Enfrentamientos</h2>
+        <span class="small text-muted" id="matches-summary">...</span>
+      </div>
+      <div class="card-body" id="matches-container">
+        <p class="text-muted mb-0">Cargando enfrentamientos...</p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4">
+      <div class="card-header bg-white">
+        <h2 class="h6 mb-0">Clasificación</h2>
+      </div>
+      <div class="card-body" id="standings-container">
+        <p class="text-muted mb-0">Cargando clasificación...</p>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script type="module" src="../js/pages/tournament-detail.js"></script>
+</body>
+</html>
