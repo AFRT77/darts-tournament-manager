@@ -120,7 +120,7 @@
                 </select>
               </div>
               <div class="col-md-6">
-                <label class="form-label" for="tournament-al-mejor-de">Al mejor de</label>
+                <label class="form-label" for="tournament-al-mejor-de" id="al-mejor-de-label">Al mejor de</label>
                 <select class="form-select" id="tournament-al-mejor-de" name="alMejorDe">
                   <option value="1">Al mejor de 1</option>
                   <option value="3" selected>Al mejor de 3</option>
@@ -131,9 +131,25 @@
                   Se jugarán como máximo 3 partidas. Gana quien consiga 2 partidas antes que su rival.
                 </div>
               </div>
+              <div class="col-md-6 d-none" id="knockout-al-mejor-de-field">
+                <label class="form-label" for="tournament-knockout-al-mejor-de">Eliminatoria · al mejor de</label>
+                <select class="form-select" id="tournament-knockout-al-mejor-de" name="knockoutAlMejorDe">
+                  <option value="1" selected>Al mejor de 1</option>
+                  <option value="3">Al mejor de 3</option>
+                  <option value="5">Al mejor de 5</option>
+                  <option value="7">Al mejor de 7</option>
+                </select>
+                <div class="form-text" id="knockout-al-mejor-de-help">
+                  Una sola partida decide cada enfrentamiento de la eliminatoria.
+                </div>
+              </div>
               <div class="col-md-6 d-none" id="group-count-field">
                 <label class="form-label" for="tournament-groups">Número de grupos</label>
-                <input class="form-control" id="tournament-groups" name="groupCount" type="number" min="2" max="16" value="4">
+                <input class="form-control" id="tournament-groups" name="groupCount" type="number" min="2" max="16" value="2">
+              </div>
+              <div class="col-md-6 d-none" id="qualifiers-field">
+                <label class="form-label" for="tournament-qualifiers">Clasificados por grupo</label>
+                <input class="form-control" id="tournament-qualifiers" name="qualifiersPerGroup" type="number" min="1" max="8" value="2">
               </div>
             </div>
           </div>

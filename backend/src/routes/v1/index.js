@@ -17,6 +17,7 @@ router.get('/', (req, res) => {
         health: '/api/v1/health',
         auth: '/api/v1/auth',
         players: '/api/v1/players',
+        users: '/api/v1/users',
         tournaments: '/api/v1/tournaments',
         matches: '/api/v1/matches',
         stats: '/api/v1/stats',
@@ -41,6 +42,7 @@ router.get('/health', (req, res) => {
 });
 
 router.use('/auth', authRoutes);
+router.use('/users', require('./users.routes'));
 router.use('/players', playersRoutes);
 router.use('/tournaments', tournamentsRoutes);
 router.use('/matches', matchesRoutes);

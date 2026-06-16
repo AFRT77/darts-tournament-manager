@@ -16,6 +16,7 @@ router.get('/', requireAuth, validate(listPlayersSchema), playerController.listP
 router.get('/:id', requireAuth, validate(uuidParamSchema), playerController.getPlayer);
 router.post('/', requireAuth, requireRole('admin'), validate(createPlayerSchema), playerController.createPlayer);
 router.put('/:id', requireAuth, requireRole('admin'), validate(updatePlayerSchema), playerController.updatePlayer);
+router.delete('/:id/permanent', requireAuth, requireRole('admin'), validate(uuidParamSchema), playerController.deletePlayerPermanent);
 router.delete('/:id', requireAuth, requireRole('admin'), validate(uuidParamSchema), playerController.deactivatePlayer);
 
 module.exports = router;

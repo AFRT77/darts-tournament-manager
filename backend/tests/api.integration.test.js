@@ -16,6 +16,13 @@ describe('API integration', () => {
     expect(response.status).toBe(200);
     expect(response.headers['x-api-version']).toBe('v1');
     expect(response.body.data.version).toBe('v1');
+    expect(response.body.data.endpoints.users).toBe('/api/v1/users');
+  });
+
+  it('allows public tournament list without token', async () => {
+    const response = await request(app).get('/api/v1/tournaments');
+
+    expect(response.status).not.toBe(401);
   });
 
   it('protects players endpoint without token', async () => {
@@ -25,8 +32,8 @@ describe('API integration', () => {
     expect(response.body.success).toBe(false);
   });
 
-  it('protects tournaments endpoint without token', async () => {
-    const response = await request(app).get('/api/v1/tournaments');
+  it('protects users endpoint without token', async () => {
+    const response = await request(app).get('/api/v1/users');
 
     expect(response.status).toBe(401);
   });

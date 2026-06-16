@@ -145,6 +145,24 @@ class PlayerService {
   async deactivate(id) {
     return this.update(id, { active: false });
   }
+
+  async hardDelete(id) {
+    this.ensureConfigured();
+    await this.getById(id);
+
+    const { error } = await supabaseAdmin
+      .from('players')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      const deleteError = new Error(error.message || 'No se pudo eliminar el jugador');
+      deleteError.statusCode = 400;
+      throw deleteError;
+    }
+
+    return { id };
+  }
 }
 
 module.exports = new PlayerService();

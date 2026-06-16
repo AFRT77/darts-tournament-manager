@@ -1,7 +1,7 @@
 const { supabaseAdmin } = require('../config/supabase');
 const tournamentService = require('./tournament.service');
 const bracketService = require('./bracket.service');
-const { getAlMejorDe, legsToWin } = require('../utils/tournamentSettings');
+const { getAlMejorDeForMatch, legsToWin } = require('../utils/tournamentSettings');
 
 class MatchService {
   ensureConfigured() {
@@ -163,6 +163,10 @@ class MatchService {
       throw createError;
     }
 
+    if (tournament.format === 'groups_knockout') {
+      await this.assignGroupNumbers(tournamentId, players, tournament.settings?.groupCount || 4);
+    }
+
     await this.advanceWalkoverWinners(tournamentId, tournament);
 
     return this.listByTournament(tournamentId);
@@ -177,8 +181,28 @@ class MatchService {
     }
   }
 
+  async assignGroupNumbers(tournamentId, players, groupCount) {
+    const sorted = [...players].sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999));
+
+    await Promise.all(sorted.map((player, index) => supabaseAdmin
+      .from('tournament_players')
+      .update({ group_number: (index % groupCount) + 1 })
+      .eq('tournament_id', tournamentId)
+      .eq('player_id', player.playerId)));
+  }
+
+  splitMatchesByPhase(matches) {
+    return {
+      groupMatches: matches.filter((match) => match.groupNumber != null),
+      knockoutMatches: matches.filter((match) => match.groupNumber == null),
+    };
+  }
+
   async advanceWinner(tournamentId, match, tournament) {
-    if (tournament.format !== 'knockout') {
+    const shouldAdvance = tournament.format === 'knockout'
+      || (tournament.format === 'groups_knockout' && match.groupNumber == null);
+
+    if (!shouldAdvance) {
       return;
     }
 
@@ -219,6 +243,278 @@ class MatchService {
       .eq('id', nextMatch.id);
   }
 
+  validateManualResult({ player1LegsWon, player2LegsWon, requiredLegs, alMejorDe }) {
+    if (player1LegsWon === player2LegsWon) {
+      const tieError = new Error('El resultado no puede quedar en empate');
+      tieError.statusCode = 422;
+      throw tieError;
+    }
+
+    if (player1LegsWon > alMejorDe || player2LegsWon > alMejorDe) {
+      const maxError = new Error(`Ningún jugador puede superar ${alMejorDe} partidas ganadas`);
+      maxError.statusCode = 422;
+      throw maxError;
+    }
+
+    if (player1LegsWon < requiredLegs && player2LegsWon < requiredLegs) {
+      const minError = new Error(`Un jugador debe alcanzar ${requiredLegs} partidas ganadas`);
+      minError.statusCode = 422;
+      throw minError;
+    }
+
+    if (player1LegsWon >= requiredLegs && player2LegsWon >= requiredLegs) {
+      const bothError = new Error('Solo un jugador puede alcanzar las partidas necesarias para ganar');
+      bothError.statusCode = 422;
+      throw bothError;
+    }
+
+    return player1LegsWon >= requiredLegs ? 'player1' : 'player2';
+  }
+
+  async clearWinnerAdvance(tournamentId, match, tournament) {
+    const isKnockoutMatch = match.groupNumber == null;
+    const shouldClear = tournament.format === 'knockout'
+      || (tournament.format === 'groups_knockout' && isKnockoutMatch);
+
+    if (!shouldClear) {
+      return;
+    }
+
+    const next = bracketService.getNextMatchSlot(match.round, match.bracketPosition);
+    const { data: nextMatches } = await supabaseAdmin
+      .from('matches')
+      .select('*')
+      .eq('tournament_id', tournamentId)
+      .eq('round', next.round)
+      .eq('bracket_position', next.bracketPosition)
+      .limit(1);
+
+    if (!nextMatches?.length) {
+      return;
+    }
+
+    const nextMatch = nextMatches[0];
+    const updatePayload = {
+      [next.slot]: null,
+      winner_id: null,
+      player1_legs_won: 0,
+      player2_legs_won: 0,
+      status: 'scheduled',
+    };
+
+    await supabaseAdmin
+      .from('matches')
+      .update(updatePayload)
+      .eq('id', nextMatch.id);
+  }
+
+  async updateResult(matchId, { player1LegsWon, player2LegsWon }) {
+    this.ensureConfigured();
+
+    const match = await this.getById(matchId);
+    const tournament = await tournamentService.getById(match.tournamentId);
+
+    if (tournament.status !== 'active') {
+      const statusError = new Error('Solo se pueden editar resultados en torneos activos');
+      statusError.statusCode = 409;
+      throw statusError;
+    }
+
+    if (!match.player1Id || !match.player2Id) {
+      const playersError = new Error('El enfrentamiento necesita dos jugadores');
+      playersError.statusCode = 409;
+      throw playersError;
+    }
+
+    const alMejorDe = getAlMejorDeForMatch(tournament.settings, match, tournament.format);
+    const requiredLegs = legsToWin(alMejorDe);
+    const winnerSide = this.validateManualResult({
+      player1LegsWon,
+      player2LegsWon,
+      requiredLegs,
+      alMejorDe,
+    });
+    const winnerId = winnerSide === 'player1' ? match.player1Id : match.player2Id;
+
+    if (match.winnerId && match.winnerId !== winnerId) {
+      await this.clearWinnerAdvance(match.tournamentId, match, tournament);
+    }
+
+    await supabaseAdmin
+      .from('match_legs')
+      .delete()
+      .eq('match_id', matchId);
+
+    const { data: updated, error } = await supabaseAdmin
+      .from('matches')
+      .update({
+        player1_legs_won: player1LegsWon,
+        player2_legs_won: player2LegsWon,
+        winner_id: winnerId,
+        status: 'finished',
+      })
+      .eq('id', matchId)
+      .select('*')
+      .single();
+
+    if (error) {
+      const saveError = new Error('No se pudo actualizar el resultado');
+      saveError.statusCode = 500;
+      throw saveError;
+    }
+
+    const mapped = this.mapMatch(updated, await this.buildPlayersMap(match.tournamentId));
+    await this.advanceWinner(match.tournamentId, mapped, tournament);
+
+    return mapped;
+  }
+
+  async resetMatch(matchId) {
+    this.ensureConfigured();
+
+    const match = await this.getById(matchId);
+    const tournament = await tournamentService.getById(match.tournamentId);
+
+    if (tournament.status !== 'active') {
+      const statusError = new Error('Solo se pueden rehacer partidos en torneos activos');
+      statusError.statusCode = 409;
+      throw statusError;
+    }
+
+    if (match.winnerId) {
+      await this.clearWinnerAdvance(match.tournamentId, match, tournament);
+    }
+
+    await supabaseAdmin
+      .from('match_legs')
+      .delete()
+      .eq('match_id', matchId);
+
+    const { data: updated, error } = await supabaseAdmin
+      .from('matches')
+      .update({
+        status: 'scheduled',
+        winner_id: null,
+        player1_legs_won: 0,
+        player2_legs_won: 0,
+      })
+      .eq('id', matchId)
+      .select('*')
+      .single();
+
+    if (error) {
+      const saveError = new Error('No se pudo rehacer el partido');
+      saveError.statusCode = 500;
+      throw saveError;
+    }
+
+    return this.mapMatch(updated, await this.buildPlayersMap(match.tournamentId));
+  }
+
+  async generateKnockoutPhase(tournamentId) {
+    this.ensureConfigured();
+
+    const tournament = await tournamentService.getById(tournamentId);
+
+    if (tournament.format !== 'groups_knockout') {
+      const formatError = new Error('Solo aplica a torneos de grupos + eliminatoria');
+      formatError.statusCode = 409;
+      throw formatError;
+    }
+
+    if (tournament.status !== 'active') {
+      const statusError = new Error('El torneo debe estar activo');
+      statusError.statusCode = 409;
+      throw statusError;
+    }
+
+    const matches = await this.listByTournament(tournamentId);
+    const { groupMatches, knockoutMatches } = this.splitMatchesByPhase(matches);
+
+    if (!groupMatches.length) {
+      const groupsError = new Error('Primero debes generar la fase de grupos');
+      groupsError.statusCode = 409;
+      throw groupsError;
+    }
+
+    if (knockoutMatches.length > 0) {
+      const existsError = new Error('La eliminatoria ya está generada');
+      existsError.statusCode = 409;
+      throw existsError;
+    }
+
+    const unfinishedGroup = groupMatches.some((match) => !['finished', 'walkover'].includes(match.status));
+    if (unfinishedGroup) {
+      const pendingError = new Error('Debes completar todos los partidos de grupos antes de generar la eliminatoria');
+      pendingError.statusCode = 409;
+      throw pendingError;
+    }
+
+    const qualifierIds = await this.resolveKnockoutQualifiers(tournamentId, tournament);
+    const players = qualifierIds.map((playerId, index) => ({
+      playerId,
+      seed: index + 1,
+    }));
+
+    const generated = bracketService.buildKnockoutMatches(players);
+    const minGroupRound = Math.max(...groupMatches.map((match) => match.round));
+    const roundOffset = minGroupRound;
+
+    const rows = generated.map((match) => ({
+      tournament_id: tournamentId,
+      player1_id: match.player1_id,
+      player2_id: match.player2_id,
+      round: match.round + roundOffset,
+      bracket_position: match.bracket_position,
+      group_number: null,
+      status: match.status || 'scheduled',
+      winner_id: match.winner_id || null,
+      player1_legs_won: match.player1_legs_won || 0,
+      player2_legs_won: match.player2_legs_won || 0,
+    }));
+
+    const { error: insertError } = await supabaseAdmin
+      .from('matches')
+      .insert(rows);
+
+    if (insertError) {
+      const createError = new Error(insertError.message || 'No se pudo generar la eliminatoria');
+      createError.statusCode = 400;
+      throw createError;
+    }
+
+    await this.advanceWalkoverWinners(tournamentId, tournament);
+
+    return this.listByTournament(tournamentId);
+  }
+
+  async resolveKnockoutQualifiers(tournamentId, tournament) {
+    const manual = tournament.settings?.knockoutQualifiers;
+
+    if (Array.isArray(manual) && manual.length) {
+      return manual.flatMap((entry) => entry.playerIds);
+    }
+
+    const standingsService = require('./standings.service');
+    const standings = await standingsService.getStandings(tournamentId);
+    const qualifiersPerGroup = tournament.settings?.qualifiersPerGroup || 2;
+    const ids = [];
+
+    (standings.groups || []).forEach((group) => {
+      group.standings.slice(0, qualifiersPerGroup).forEach((entry) => {
+        ids.push(entry.playerId);
+      });
+    });
+
+    if (ids.length < 2) {
+      const error = new Error('No hay suficientes clasificados para la eliminatoria');
+      error.statusCode = 409;
+      throw error;
+    }
+
+    return ids;
+  }
+
   async recordLeg(matchId, { winnerId }) {
     this.ensureConfigured();
 
@@ -237,7 +533,7 @@ class MatchService {
     }
 
     const tournament = await tournamentService.getById(match.tournamentId);
-    const alMejorDe = getAlMejorDe(tournament.settings);
+    const alMejorDe = getAlMejorDeForMatch(tournament.settings, match, tournament.format);
     const requiredLegs = legsToWin(alMejorDe);
 
     const { count: legCount, error: countError } = await supabaseAdmin

@@ -44,7 +44,9 @@
       <div class="d-flex gap-2 flex-wrap">
         <button type="button" class="btn btn-success d-none" id="start-btn">Iniciar torneo</button>
         <button type="button" class="btn btn-warning d-none" id="generate-matches-btn">Generar enfrentamientos</button>
+        <button type="button" class="btn btn-info d-none" id="generate-knockout-btn">Generar eliminatoria</button>
         <button type="button" class="btn btn-dark d-none" id="finish-btn">Finalizar torneo</button>
+        <button type="button" class="btn btn-outline-danger d-none" id="delete-tournament-btn">Eliminar torneo</button>
       </div>
     </div>
 
@@ -86,7 +88,17 @@
       </div>
     </div>
 
-    <div class="card shadow-sm border-0 mt-4">
+    <div class="card shadow-sm border-0 mt-4 d-none" id="qualifiers-card">
+      <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
+        <h2 class="h6 mb-0">Clasificados a eliminatoria</h2>
+        <button type="button" class="btn btn-sm btn-outline-primary" id="save-qualifiers-btn">Guardar clasificados</button>
+      </div>
+      <div class="card-body" id="qualifiers-container">
+        <p class="text-muted mb-0">Completa la fase de grupos para configurar clasificados.</p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4" id="matches-card">
       <div class="card-header bg-white d-flex flex-wrap justify-content-between align-items-center gap-2">
         <h2 class="h6 mb-0">Enfrentamientos</h2>
         <span class="small text-muted" id="matches-summary">...</span>
@@ -105,6 +117,37 @@
       </div>
     </div>
   </main>
+
+  <div class="modal fade" id="edit-result-modal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <form id="edit-result-form">
+          <div class="modal-header">
+            <h2 class="modal-title h5">Editar resultado</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+          </div>
+          <div class="modal-body">
+            <input type="hidden" id="edit-result-match-id">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label" id="edit-player1-label">Jugador 1</label>
+                <input class="form-control" id="edit-player1-legs" type="number" min="0" required>
+              </div>
+              <div class="col-md-6">
+                <label class="form-label" id="edit-player2-label">Jugador 2</label>
+                <input class="form-control" id="edit-player2-legs" type="number" min="0" required>
+              </div>
+            </div>
+            <div class="form-text mt-2" id="edit-result-help"></div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn btn-primary" id="save-result-btn">Guardar resultado</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
   <script type="module" src="../js/pages/tournament-detail.js"></script>

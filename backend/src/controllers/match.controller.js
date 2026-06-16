@@ -19,6 +19,15 @@ async function generateMatches(req, res, next) {
   }
 }
 
+async function generateKnockout(req, res, next) {
+  try {
+    const matches = await matchService.generateKnockoutPhase(req.validated.params.id);
+    return success(res, matches, null, 201);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function getBracket(req, res, next) {
   try {
     const bracket = await matchService.getBracket(req.validated.params.id);
@@ -55,11 +64,32 @@ async function setWalkover(req, res, next) {
   }
 }
 
+async function updateResult(req, res, next) {
+  try {
+    const match = await matchService.updateResult(req.validated.params.matchId, req.validated.body);
+    return success(res, match);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function resetMatch(req, res, next) {
+  try {
+    const match = await matchService.resetMatch(req.validated.params.matchId);
+    return success(res, match);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   listTournamentMatches,
   generateMatches,
+  generateKnockout,
   getBracket,
   getMatch,
   recordLeg,
   setWalkover,
+  updateResult,
+  resetMatch,
 };

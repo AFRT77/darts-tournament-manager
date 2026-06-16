@@ -89,6 +89,36 @@ async function finishTournament(req, res, next) {
   }
 }
 
+async function deleteTournament(req, res, next) {
+  try {
+    const result = await tournamentService.delete(req.validated.params.id);
+    return success(res, result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function getKnockoutQualifiers(req, res, next) {
+  try {
+    const data = await tournamentService.getKnockoutQualifiers(req.validated.params.id);
+    return success(res, data);
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function setKnockoutQualifiers(req, res, next) {
+  try {
+    const result = await tournamentService.setKnockoutQualifiers(
+      req.validated.params.id,
+      req.validated.body.qualifiers
+    );
+    return success(res, result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   listTournaments,
   getTournament,
@@ -99,4 +129,7 @@ module.exports = {
   removeTournamentPlayer,
   startTournament,
   finishTournament,
+  deleteTournament,
+  getKnockoutQualifiers,
+  setKnockoutQualifiers,
 };

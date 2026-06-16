@@ -18,7 +18,7 @@ app.use(helmet({
   contentSecurityPolicy: env.nodeEnv === 'test' ? false : {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https://cdn.jsdelivr.net'],
       fontSrc: ["'self'", 'https://cdn.jsdelivr.net', 'data:'],
       imgSrc: ["'self'", 'data:', 'https://validator.swagger.io'],

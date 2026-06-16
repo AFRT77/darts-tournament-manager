@@ -12,22 +12,27 @@ const {
   createTournamentSchema,
   updateTournamentSchema,
   addPlayersSchema,
+  knockoutQualifiersSchema,
 } = require('../../validators/tournament.validator');
 
 const router = express.Router();
 
-router.get('/', requireAuth, validate(listTournamentsSchema), tournamentController.listTournaments);
+router.get('/', validate(listTournamentsSchema), tournamentController.listTournaments);
 router.post('/', requireAuth, requireRole('admin'), validate(createTournamentSchema), tournamentController.createTournament);
-router.get('/:id', requireAuth, validate(uuidParamSchema), tournamentController.getTournament);
+router.get('/:id', validate(uuidParamSchema), tournamentController.getTournament);
 router.put('/:id', requireAuth, requireRole('admin'), validate(updateTournamentSchema), tournamentController.updateTournament);
 router.get('/:id/players', requireAuth, validate(uuidParamSchema), tournamentController.listTournamentPlayers);
 router.post('/:id/players', requireAuth, requireRole('admin'), validate(addPlayersSchema), tournamentController.addTournamentPlayers);
 router.delete('/:id/players/:playerId', requireAuth, requireRole('admin'), validate(tournamentPlayerParamSchema), tournamentController.removeTournamentPlayer);
+router.get('/:id/knockout-qualifiers', requireAuth, validate(uuidParamSchema), tournamentController.getKnockoutQualifiers);
+router.put('/:id/knockout-qualifiers', requireAuth, requireRole('admin'), validate(knockoutQualifiersSchema), tournamentController.setKnockoutQualifiers);
 router.post('/:id/start', requireAuth, requireRole('admin'), validate(uuidParamSchema), tournamentController.startTournament);
 router.post('/:id/finish', requireAuth, requireRole('admin'), validate(uuidParamSchema), tournamentController.finishTournament);
-router.get('/:id/matches', requireAuth, validate(uuidParamSchema), matchController.listTournamentMatches);
+router.delete('/:id', requireAuth, requireRole('admin'), validate(uuidParamSchema), tournamentController.deleteTournament);
+router.get('/:id/matches', validate(uuidParamSchema), matchController.listTournamentMatches);
 router.post('/:id/generate-matches', requireAuth, requireRole('admin'), validate(uuidParamSchema), matchController.generateMatches);
-router.get('/:id/bracket', requireAuth, validate(uuidParamSchema), matchController.getBracket);
-router.get('/:id/standings', requireAuth, validate(uuidParamSchema), statsController.getTournamentStandings);
+router.post('/:id/generate-knockout', requireAuth, requireRole('admin'), validate(uuidParamSchema), matchController.generateKnockout);
+router.get('/:id/bracket', validate(uuidParamSchema), matchController.getBracket);
+router.get('/:id/standings', validate(uuidParamSchema), statsController.getTournamentStandings);
 
 module.exports = router;

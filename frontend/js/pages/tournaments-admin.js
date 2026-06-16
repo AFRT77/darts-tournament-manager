@@ -8,8 +8,8 @@ import {
   STATUS_LABELS,
   STATUS_BADGES,
   formatLabel,
-  formatAlMejorDe,
   formatAlMejorDeAyuda,
+  formatTournamentMatchFormats,
 } from '../utils/tournaments.js';
 
 const userNameEl = document.getElementById('user-name');
@@ -25,6 +25,11 @@ const saveTournamentButton = document.getElementById('save-tournament-btn');
 const paginationInfo = document.getElementById('pagination-info');
 const alMejorDeHelp = document.getElementById('al-mejor-de-help');
 const alMejorDeSelect = document.getElementById('tournament-al-mejor-de');
+const alMejorDeLabel = document.getElementById('al-mejor-de-label');
+const knockoutAlMejorDeField = document.getElementById('knockout-al-mejor-de-field');
+const knockoutAlMejorDeHelp = document.getElementById('knockout-al-mejor-de-help');
+const knockoutAlMejorDeSelect = document.getElementById('tournament-knockout-al-mejor-de');
+const formatSelect = document.getElementById('tournament-format');
 
 let currentPage = 1;
 const pageSize = 20;
@@ -66,7 +71,7 @@ function renderTournaments(tournaments) {
     <tr>
       <td>
         <div class="fw-semibold">${escapeHtml(tournament.name)}</div>
-        <div class="small text-muted">${formatAlMejorDe(tournament.settings)}</div>
+        <div class="small text-muted">${formatTournamentMatchFormats(tournament.settings, tournament.format)}</div>
       </td>
       <td>${formatLabel(FORMAT_LABELS, tournament.format)}</td>
       <td>${formatLabel(GAME_TYPE_LABELS, tournament.gameType)}</td>
@@ -77,9 +82,12 @@ function renderTournaments(tournaments) {
       </td>
       <td>${tournament.playerCount || 0}</td>
       <td class="text-end">
-        <a class="btn btn-sm btn-outline-primary" href="tournament-detail.html?id=${tournament.id}">
+        <a class="btn btn-sm btn-outline-primary me-1" href="tournament-detail.html?id=${tournament.id}">
           Gestionar
         </a>
+        <button type="button" class="btn btn-sm btn-outline-danger" data-delete-id="${tournament.id}">
+          Eliminar
+        </button>
       </td>
     </tr>
   `).join('');
@@ -127,7 +135,7 @@ function openCreateModal() {
   }
 
   tournamentForm.reset();
-  updateAlMejorDeHelp();
+  updateFormatFields();
   modal.show();
 }
 
@@ -146,7 +154,9 @@ async function handleCreateTournament(event) {
   };
 
   if (formData.get('format') === 'groups_knockout') {
-    payload.settings.groupCount = Number(formData.get('groupCount') || 4);
+    payload.settings.groupCount = Number(formData.get('groupCount') || 2);
+    payload.settings.qualifiersPerGroup = Number(formData.get('qualifiersPerGroup') || 2);
+    payload.settings.knockoutAlMejorDe = Number(formData.get('knockoutAlMejorDe') || 1);
   }
 
   saveTournamentButton.disabled = true;
@@ -167,22 +177,42 @@ async function handleCreateTournament(event) {
   }
 }
 
-document.getElementById('tournament-format').addEventListener('change', (event) => {
-  document.getElementById('group-count-field').classList.toggle(
-    'd-none',
-    event.target.value !== 'groups_knockout'
-  );
-});
+function updateFormatFields() {
+  const isGroupsKnockout = formatSelect?.value === 'groups_knockout';
+
+  document.getElementById('group-count-field')?.classList.toggle('d-none', !isGroupsKnockout);
+  document.getElementById('qualifiers-field')?.classList.toggle('d-none', !isGroupsKnockout);
+  knockoutAlMejorDeField?.classList.toggle('d-none', !isGroupsKnockout);
+
+  if (alMejorDeLabel) {
+    alMejorDeLabel.textContent = isGroupsKnockout ? 'Fase de grupos · al mejor de' : 'Al mejor de';
+  }
+
+  updateAlMejorDeHelp();
+  updateKnockoutAlMejorDeHelp();
+}
 
 function updateAlMejorDeHelp() {
   if (!alMejorDeHelp || !alMejorDeSelect) return;
   alMejorDeHelp.textContent = formatAlMejorDeAyuda(Number(alMejorDeSelect.value || 3));
 }
 
+function updateKnockoutAlMejorDeHelp() {
+  if (!knockoutAlMejorDeHelp || !knockoutAlMejorDeSelect) return;
+  knockoutAlMejorDeHelp.textContent = formatAlMejorDeAyuda(Number(knockoutAlMejorDeSelect.value || 1));
+}
+
+formatSelect?.addEventListener('change', updateFormatFields);
+
 if (alMejorDeSelect) {
   alMejorDeSelect.addEventListener('change', updateAlMejorDeHelp);
-  updateAlMejorDeHelp();
 }
+
+if (knockoutAlMejorDeSelect) {
+  knockoutAlMejorDeSelect.addEventListener('change', updateKnockoutAlMejorDeHelp);
+}
+
+updateFormatFields();
 
 searchInput.addEventListener('input', debounce(() => {
   currentPage = 1;
@@ -197,6 +227,22 @@ statusFilter.addEventListener('change', () => {
 refreshButton.addEventListener('click', loadTournaments);
 document.getElementById('new-tournament-btn').addEventListener('click', openCreateModal);
 tournamentForm.addEventListener('submit', handleCreateTournament);
+tournamentsTableBody.addEventListener('click', async (event) => {
+  const button = event.target.closest('[data-delete-id]');
+  if (!button) return;
+
+  if (!window.confirm('¿Eliminar este torneo de forma permanente? Se borrarán inscripciones, enfrentamientos y resultados.')) {
+    return;
+  }
+
+  try {
+    await apiRequest(`/tournaments/${button.dataset.deleteId}`, { method: 'DELETE' });
+    showAlert('Torneo eliminado correctamente.');
+    await loadTournaments();
+  } catch (error) {
+    showAlert(error.message, 'danger');
+  }
+});
 logoutButton.addEventListener('click', logout);
 
 async function init() {

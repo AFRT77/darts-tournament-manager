@@ -29,9 +29,14 @@ class StandingsService {
     const standingsMap = new Map();
 
     enrolled.forEach((entry) => {
+      if (group && entry.groupNumber !== Number(group)) {
+        return;
+      }
+
       standingsMap.set(entry.playerId, this.createStandingEntry({
         playerId: entry.playerId,
         player: entry.player,
+        groupNumber: entry.groupNumber ?? null,
       }));
     });
 

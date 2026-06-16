@@ -26,9 +26,10 @@ function buildRoundRobinMatches(players) {
 }
 
 function buildGroupStageMatches(players, groupCount) {
+  const sorted = [...players].sort((a, b) => (a.seed ?? 999) - (b.seed ?? 999));
   const groups = Array.from({ length: groupCount }, () => []);
 
-  players.forEach((player, index) => {
+  sorted.forEach((player, index) => {
     groups[index % groupCount].push(player);
   });
 
@@ -140,5 +141,6 @@ module.exports = {
   generateMatches,
   getNextMatchSlot,
   nextPowerOf2,
+  buildKnockoutMatches,
   legsToWin: require('../utils/tournamentSettings').legsToWin,
 };

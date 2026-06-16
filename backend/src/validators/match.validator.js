@@ -30,9 +30,20 @@ const walkoverSchema = z.object({
   }),
 });
 
+const updateResultSchema = z.object({
+  params: z.object({
+    matchId: z.string().uuid('ID de enfrentamiento inválido'),
+  }),
+  body: z.object({
+    player1LegsWon: z.coerce.number().int().min(0).max(15),
+    player2LegsWon: z.coerce.number().int().min(0).max(15),
+  }),
+});
+
 module.exports = {
   uuidParamSchema,
   matchParamSchema,
   recordLegSchema,
   walkoverSchema,
+  updateResultSchema,
 };

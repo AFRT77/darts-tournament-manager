@@ -44,13 +44,25 @@ function getAlMejorDe(settings = {}) {
   return settings.alMejorDe ?? settings.bestOf ?? 3;
 }
 
+function getKnockoutAlMejorDe(settings = {}) {
+  return settings.knockoutAlMejorDe ?? 1;
+}
+
+function getAlMejorDeForMatch(settings = {}, match = {}, format) {
+  const isKnockoutPhaseMatch = format === 'groups_knockout' && match.groupNumber == null;
+
+  if (isKnockoutPhaseMatch) {
+    return getKnockoutAlMejorDe(settings);
+  }
+
+  return getAlMejorDe(settings);
+}
+
 function partidasParaGanar(alMejorDe) {
   return Math.floor(alMejorDe / 2) + 1;
 }
 
-function formatAlMejorDe(settings = {}) {
-  const value = getAlMejorDe(settings);
-
+function formatAlMejorDeValue(value) {
   if (value === 1) {
     return 'A una partida';
   }
@@ -58,15 +70,37 @@ function formatAlMejorDe(settings = {}) {
   return `Al mejor de ${value} partidas`;
 }
 
-function formatAlMejorDeDetalle(settings = {}) {
-  const total = getAlMejorDe(settings);
-  const paraGanar = partidasParaGanar(total);
+function formatAlMejorDe(settings = {}) {
+  return formatAlMejorDeValue(getAlMejorDe(settings));
+}
 
-  if (total === 1) {
+function formatAlMejorDeDetalleValue(value) {
+  const paraGanar = partidasParaGanar(value);
+
+  if (value === 1) {
     return 'Partido a una sola partida';
   }
 
-  return `Al mejor de ${total} partidas (gana quien consiga ${paraGanar} partidas primero)`;
+  return `Al mejor de ${value} partidas (gana quien consiga ${paraGanar} partidas primero)`;
+}
+
+function formatAlMejorDeDetalle(settings = {}) {
+  return formatAlMejorDeDetalleValue(getAlMejorDe(settings));
+}
+
+function formatAlMejorDeDetalleForMatch(settings = {}, match = {}, format) {
+  return formatAlMejorDeDetalleValue(getAlMejorDeForMatch(settings, match, format));
+}
+
+function formatTournamentMatchFormats(settings = {}, format) {
+  if (format !== 'groups_knockout') {
+    return formatAlMejorDeDetalle(settings);
+  }
+
+  const groups = formatAlMejorDeDetalleValue(getAlMejorDe(settings));
+  const knockout = formatAlMejorDeDetalleValue(getKnockoutAlMejorDe(settings));
+
+  return `Grupos: ${groups} · Eliminatoria: ${knockout}`;
 }
 
 function formatAlMejorDeAyuda(alMejorDe = 3) {
@@ -89,8 +123,12 @@ export {
   MATCH_STATUS_BADGES,
   formatLabel,
   getAlMejorDe,
+  getKnockoutAlMejorDe,
+  getAlMejorDeForMatch,
   partidasParaGanar,
   formatAlMejorDe,
   formatAlMejorDeDetalle,
+  formatAlMejorDeDetalleForMatch,
+  formatTournamentMatchFormats,
   formatAlMejorDeAyuda,
 };

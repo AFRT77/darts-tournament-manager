@@ -24,6 +24,7 @@ const paginationInfo = document.getElementById('pagination-info');
 
 let currentPage = 1;
 const pageSize = 20;
+let loadedPlayers = [];
 
 function getPlayerModal() {
   if (!window.bootstrap?.Modal) {
@@ -84,13 +85,25 @@ function renderPlayers(players) {
           Editar
         </button>
         ${player.active ? `
-          <button type="button" class="btn btn-sm btn-outline-danger" data-action="deactivate" data-id="${player.id}">
+          <button type="button" class="btn btn-sm btn-outline-warning me-1" data-action="deactivate" data-id="${player.id}">
             Desactivar
           </button>
-        ` : ''}
+          <button type="button" class="btn btn-sm btn-outline-danger" data-action="delete-permanent" data-id="${player.id}">
+            Eliminar
+          </button>
+        ` : `
+          <button type="button" class="btn btn-sm btn-outline-success me-1" data-action="activate" data-id="${player.id}">
+            Activar
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger" data-action="delete-permanent" data-id="${player.id}">
+            Eliminar
+          </button>
+        `}
       </td>
     </tr>
   `).join('');
+
+  loadedPlayers = players;
 }
 
 function escapeHtml(text) {
@@ -225,6 +238,33 @@ async function deactivatePlayer(id) {
   }
 }
 
+async function activatePlayer(id) {
+  try {
+    await apiRequest(`/players/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ active: true }),
+    });
+    showAlert('Jugador activado.');
+    await loadPlayers();
+  } catch (error) {
+    showAlert(error.message, 'danger');
+  }
+}
+
+async function deletePlayerPermanent(id) {
+  if (!window.confirm('¿Eliminar este jugador de forma permanente? Esta acción no se puede deshacer.')) {
+    return;
+  }
+
+  try {
+    await apiRequest(`/players/${id}/permanent`, { method: 'DELETE' });
+    showAlert('Jugador eliminado permanentemente.');
+    await loadPlayers();
+  } catch (error) {
+    showAlert(error.message, 'danger');
+  }
+}
+
 playersTableBody.addEventListener('click', async (event) => {
   const button = event.target.closest('button[data-action]');
   if (!button) return;
@@ -236,7 +276,23 @@ playersTableBody.addEventListener('click', async (event) => {
     return;
   }
 
+  if (action === 'activate') {
+    await activatePlayer(id);
+    return;
+  }
+
+  if (action === 'delete-permanent') {
+    await deletePlayerPermanent(id);
+    return;
+  }
+
   if (action === 'edit') {
+    const player = loadedPlayers.find((entry) => entry.id === id);
+    if (player) {
+      openEditModal(player);
+      return;
+    }
+
     try {
       const response = await apiRequest(`/players/${id}`);
       openEditModal(response.data);

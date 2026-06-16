@@ -6,7 +6,9 @@ const tournamentStatuses = ['draft', 'active', 'finished'];
 
 const settingsSchema = z.object({
   alMejorDe: z.coerce.number().int().min(1).max(15).default(3),
+  knockoutAlMejorDe: z.coerce.number().int().min(1).max(15).optional(),
   groupCount: z.coerce.number().int().min(2).max(16).optional(),
+  qualifiersPerGroup: z.coerce.number().int().min(1).max(8).optional(),
 }).passthrough();
 
 const uuidParamSchema = z.object({
@@ -66,6 +68,18 @@ const addPlayersSchema = z.object({
   }),
 });
 
+const knockoutQualifiersSchema = z.object({
+  params: z.object({
+    id: z.string().uuid('ID de torneo inválido'),
+  }),
+  body: z.object({
+    qualifiers: z.array(z.object({
+      groupNumber: z.coerce.number().int().min(1),
+      playerIds: z.array(z.string().uuid()).min(1),
+    })).min(1),
+  }),
+});
+
 module.exports = {
   uuidParamSchema,
   tournamentPlayerParamSchema,
@@ -73,6 +87,7 @@ module.exports = {
   createTournamentSchema,
   updateTournamentSchema,
   addPlayersSchema,
+  knockoutQualifiersSchema,
   tournamentFormats,
   gameTypes,
   tournamentStatuses,

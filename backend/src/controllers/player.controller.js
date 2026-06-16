@@ -48,10 +48,20 @@ async function deactivatePlayer(req, res, next) {
   }
 }
 
+async function deletePlayerPermanent(req, res, next) {
+  try {
+    const result = await playerService.hardDelete(req.validated.params.id);
+    return success(res, result);
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   listPlayers,
   getPlayer,
   createPlayer,
   updatePlayer,
   deactivatePlayer,
+  deletePlayerPermanent,
 };

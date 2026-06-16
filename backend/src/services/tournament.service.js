@@ -359,6 +359,65 @@ class TournamentService {
 
     return this.mapTournament(data, { playerCount: tournament.playerCount });
   }
+
+  async delete(id) {
+    this.ensureConfigured();
+    await this.getById(id);
+
+    const { error } = await supabaseAdmin
+      .from('tournaments')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      const deleteError = new Error(error.message || 'No se pudo eliminar el torneo');
+      deleteError.statusCode = 400;
+      throw deleteError;
+    }
+
+    return { id };
+  }
+
+  async getKnockoutQualifiers(tournamentId) {
+    const tournament = await this.getById(tournamentId);
+    return {
+      qualifiers: tournament.settings?.knockoutQualifiers || null,
+      qualifiersPerGroup: tournament.settings?.qualifiersPerGroup || 2,
+    };
+  }
+
+  async setKnockoutQualifiers(tournamentId, qualifiers) {
+    const tournament = await this.getById(tournamentId);
+
+    if (tournament.format !== 'groups_knockout') {
+      const formatError = new Error('Solo aplica a torneos de grupos + eliminatoria');
+      formatError.statusCode = 409;
+      throw formatError;
+    }
+
+    const settings = {
+      ...tournament.settings,
+      knockoutQualifiers: qualifiers,
+    };
+
+    const { data, error } = await supabaseAdmin
+      .from('tournaments')
+      .update({ settings })
+      .eq('id', tournamentId)
+      .select('*')
+      .single();
+
+    if (error) {
+      const saveError = new Error('No se pudieron guardar los clasificados');
+      saveError.statusCode = 500;
+      throw saveError;
+    }
+
+    return {
+      qualifiers,
+      tournament: this.mapTournament(data, { playerCount: tournament.playerCount }),
+    };
+  }
 }
 
 module.exports = new TournamentService();
